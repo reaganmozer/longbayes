@@ -1,0 +1,25 @@
+
+model {
+  # priors on parameters
+  q1 ~ dunif(0,1);
+  q2 ~ dunif(0,1);
+  for (j in 1:T.cens){
+    p[j] ~ dunif(0,1);
+  }
+  for (n in 1:N){
+  for (t in 1:K){
+    prob_ind[n,t] = q1^X[n,t]*q2^(1-X[n,t]);
+    Y[n,t] ~ dbern(prob_ind[n,t]);
+    time_cross[n,t] = ifelse(Y[n,t]>0, t, T.cens);
+  }
+  T.obs[n] ~ dsum(min(time_cross[n,]));
+  }
+  
+  for (n in 1:N){
+     M_pred[n] = ifelse(T.obs[n]>K, 1, 0); # indicator for ineligibility (i.e., T>K)
+     pi[n] = p[T.obs[n]]*(1-M_pred[n]);
+     Z.obs[n]~dbern(pi[n]);
+  }
+  n.control = sum((1-M_pred)*(1-Z.obs));
+  n.ineligible = sum(M_pred);
+}
